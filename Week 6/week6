@@ -1,0 +1,300 @@
+<?
+    error_reporting(E_ALL);
+    require_once('php_backend/inc_libraries/inc_session.php');
+    session_set_save_handler('_open','_close','_read','_write','_destroy','_clean');    
+    session_start();
+    require_once('php_backend/inc_libraries/inc_db_conn_san.php');
+
+    if(!isset($_SESSION['login'])){
+        send_json_response(json_encode(['success' => false, 'message' => 'Error: You must be logged in to access this page']), 400);
+        die();
+    }
+    
+    $dbc=dbConnectInitial();
+    $lemail=dbTrimSanitizeStandard($_SESSION["login"]);
+    $content = file_get_contents("php://input");
+    $decoded = json_decode($content, true);
+    $goal_type = $decoded['goalType'] ?? null;
+
+    goal_insert($dbc, $lemail, $goal_type);
+    $response = json_encode(['success' => true, 'message' => 'Successfully added goal']); 
+    send_json_response($response);
+    die();
+
+    /*-----------------------Functions------------------------*/
+    function goal_insert($dbc, $lemail, $goal_type){
+        $query = "INSERT INTO goal_data(user_id, goal_type, goal_date, goal_shared)
+            VALUES (?, ?, ?, ?)";
+        $params = [$lemail, intval($goal_type), date("Y-m-d"), 0];   //goal_shared set to zero since I don't know what this means
+        $stmt = $dbc->prepare($query);
+        if(!$stmt->execute($params)){
+            sql_execture_fail();
+        }
+        $goal_id = $dbc->lastInsertId();    // id of the goal just created
+        milestones_insert($dbc, $lemail, $goal_type, $goal_id);
+    }
+
+    function milestones_insert($dbc, $lemail, $goal_type, $goal_id){
+        $milestones_list = [
+            "2" => [
+                [
+                    "goal_milestone_type" => 2,
+                    "goal_milestone_text" => "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do",
+                    "goal_milestone_title" => "Title",
+                    "goal_milestone_keyword" => "student"   
+                ],
+                [
+                    "goal_milestone_type" => 2,
+                    "goal_milestone_text" => "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do",
+                    "goal_milestone_title" => "Title",
+                    "goal_milestone_keyword" => "student"   
+                ],
+            ],  // student loan
+            "4" => [
+                [
+                    "goal_milestone_type" => 4,
+                    "goal_milestone_text" => "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do",
+                    "goal_milestone_title" => "Title",
+                    "goal_milestone_keyword" => "mortgage"   
+                ],
+                [
+                    "goal_milestone_type" => 4,
+                    "goal_milestone_text" => "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do",
+                    "goal_milestone_title" => "Title",
+                    "goal_milestone_keyword" => "mortgage"   
+                ],
+            ],  // mortgage
+            "8" => [
+                [
+                    "goal_milestone_type" => 4,
+                    "goal_milestone_text" => "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do",
+                    "goal_milestone_title" => "Title",
+                    "goal_milestone_keyword" => "retirement"   
+                ],
+                [
+                    "goal_milestone_type" => 4,
+                    "goal_milestone_text" => "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do",
+                    "goal_milestone_title" => "Title",
+                    "goal_milestone_keyword" => "retirement"   
+                ],
+            ],  // retirement
+            "10" => [
+                [
+                    "goal_milestone_type" => 4,
+                    "goal_milestone_text" => "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do",
+                    "goal_milestone_title" => "Title",
+                    "goal_milestone_keyword" => "business"   
+                ],
+                [
+                    "goal_milestone_type" => 4,
+                    "goal_milestone_text" => "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do",
+                    "goal_milestone_title" => "Title",
+                    "goal_milestone_keyword" => "business"   
+                ],
+            ], // business loan, I can't find the actual number for it so making one up
+            "12" => [
+                [
+                    "goal_milestone_type" => 4,
+                    "goal_milestone_text" => "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do",
+                    "goal_milestone_title" => "Title",
+                    "goal_milestone_keyword" => "emergency"   
+                ],
+                [
+                    "goal_milestone_type" => 4,
+                    "goal_milestone_text" => "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do",
+                    "goal_milestone_title" => "Title",
+                    "goal_milestone_keyword" => "emergency"   
+                ],
+            ], // emergency fund, I can't find the actual number for it so making one up
+            "20" => [
+                [
+                    "goal_milestone_type" => 20,
+                    "goal_milestone_text" => "Start by inputting your zip code, tax filing status, household income, and details about your electric vehicle into the Rebate Calculator.",
+                    "goal_milestone_title" => "Input Your Details",
+                    "goal_milestone_keyword" => "sustainability"   
+                ],
+                [
+                    "goal_milestone_type" => 20,
+                    "goal_milestone_text" => "Then the Rebate Calculator calculates how much money you can get back on your purchase.",
+                    "goal_milestone_title" => "Calculate",
+                    "goal_milestone_keyword" => "sustainability"   
+                ],
+                [
+                    "goal_milestone_type" => 20,
+                    "goal_milestone_text" => "Please provide your email address to receive your personalized rebate report, including links to each relevant program.",
+                    "goal_milestone_title" => "Provide an Email",
+                    "goal_milestone_keyword" => "sustainability"   
+                ],
+            ], // electric vehicle tax incentives
+            "21" => [
+                [
+                    "goal_milestone_type" => 21,
+                    "goal_milestone_text" => "Start by telling us a bit about yourself and your vehicle. Age, driving history, car model  the more details you provide, the more accurate your estimate will be.",
+                    "goal_milestone_title" => "Input Your Details",
+                    "goal_milestone_keyword" => "auto insurance"  
+                ],
+                [
+                    "goal_milestone_type" => 21,
+                    "goal_milestone_text" => "Milestones
+                    Choose Your Coverage: Explore a range of coverage options tailored to your needs. From basic liability to comprehensive protection, you're in control of your insurance destiny.",
+                    "goal_milestone_title" => "Choose Your Coverage",
+                    "goal_milestone_keyword" => "auto insurance"  
+                ],
+                [
+                    "goal_milestone_type" => 21,
+                    "goal_milestone_text" => "No more waiting on hold or filling out endless forms. With our lightning-fast calculator, you'll receive personalized insurance quotes instantly, allowing you to make decisions on the spot.",
+                    "goal_milestone_title" => "Get Instant Quotes",
+                    "goal_milestone_keyword" => "auto insurance"  
+                ],
+                [
+                    "goal_milestone_type" => 21,
+                    "goal_milestone_text" => "Armed with multiple quotes from top insurers, you can compare coverage and prices side by side. Find the perfect balance between protection and affordability without the hassle.",
+                    "goal_milestone_title" => "Compare and Save",
+                    "goal_milestone_keyword" => "auto insurance"  
+                ],
+                [
+                    "goal_milestone_type" => 21,
+                    "goal_milestone_text" => "Once you've found the ideal policy, it's time to lock it in. With seamless integration with Surround Insurance, you can transition smoothly from estimate to coverage with confidence.",
+                    "goal_milestone_title" => "Secure Your Coverage",
+                    "goal_milestone_keyword" => "auto insurance"  
+                ],
+                
+            ],  // Surround Insurance Calculator powered by Unadat
+            "22" => [
+                [
+                    "goal_milestone_type" => 22,
+                    "goal_milestone_text" => "Start by telling us a bit about yourself and your vehicle. Age, driving history, car model  the more details you provide, the more accurate your estimate will be.",
+                    "goal_milestone_title" => "Input Your Details",
+                    "goal_milestone_keyword" => "life insurance"   
+                ],
+                [
+                    "goal_milestone_type" => 22,
+                    "goal_milestone_text" => "Take a quick quiz to get a better idea on what coverage is right for you, and how much you’ll be paying.",
+                    "goal_milestone_title" => "Try the Life Insurance Calculator",
+                    "goal_milestone_keyword" => "life insurance"   
+                ],
+                [
+                    "goal_milestone_type" => 22,
+                    "goal_milestone_text" => "Not ready for life insurance yet? We’ll schedule a reminder for when you are!",
+                    "goal_milestone_title" => "Set a Reminder",
+                    "goal_milestone_keyword" => "life insurance"   
+                ],
+                [
+                    "goal_milestone_type" => 22,
+                    "goal_milestone_text" => "Armed with multiple quotes from top insurers, you can compare coverage and prices side by side. Find the perfect balance between protection and affordability without the hassle.",
+                    "goal_milestone_title" => "Compare and Save",
+                    "goal_milestone_keyword" => "life insurance"   
+                ],
+                [
+                    "goal_milestone_type" => 22,
+                    "goal_milestone_text" => "Ready for coverage? With seamless integration with Everyday Life, we’ll put in most of the tedious work and get you covered in 15 minutes or less!",
+                    "goal_milestone_title" => "Secure Your Coverage",
+                    "goal_milestone_keyword" => "life insurance"   
+                ],
+            ], // life insurance benefits
+            "23" => [
+                [
+                    "goal_milestone_type" => 23,
+                    "goal_milestone_text" => "Start by telling us a bit about yourself and your desired app. Experience with coding, who will use the app, what the app will be used for  the more details you provide, the more accurate your estimate will be.",
+                    "goal_milestone_title" => "Input Your Details",
+                    "goal_milestone_keyword" => "app development"   
+                ],
+                [
+                    "goal_milestone_type" => 23,
+                    "goal_milestone_text" => "Explore a range of plan options tailored to your needs. Personal, business, school, and organization.",
+                    "goal_milestone_title" => "Choose Your Plan",
+                    "goal_milestone_keyword" => "app development"   
+                ],
+                [
+                    "goal_milestone_type" => 23,
+                    "goal_milestone_text" => "No more waiting on hold or filling out endless forms. With our state-of-the-art system, you'll receive personalized plan prices instantly, allowing you to make decisions on the spot.",
+                    "goal_milestone_title" => "Get Instant Pricing",
+                    "goal_milestone_keyword" => "app development"   
+                ],
+                [
+                    "goal_milestone_type" => 23,
+                    "goal_milestone_text" => "With multiple plans from other platforms, you can compare features and prices side by side. Find the perfect balance between flexibility and affordability without the hassle.",
+                    "goal_milestone_title" => "Compare and Save",
+                    "goal_milestone_keyword" => "app development"   
+                ],
+                [
+                    "goal_milestone_type" => 23,
+                    "goal_milestone_text" => " Once you've found the plan, it's time to lock it in. With seamless integration with OneSpot, you can immediately begin to develop your desired mobile app.",
+                    "goal_milestone_title" => "Secure Your App",
+                    "goal_milestone_keyword" => "app development"   
+                ],
+            ], // OneSpot AI coding app
+        ];
+        $curr_milestones = $milestones_list[$goal_type];
+
+        foreach($curr_milestones as $milestone){
+            $query = "INSERT INTO goal_milestone_data (user_email, assoc_goal, goal_milestone_type, goal_milestone_text, 
+            goal_milestone_comp, goal_milestone_end_date, goal_milestone_title, goal_milestone_magnitude, goal_milestone_keyword)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
+
+            $params = [
+                $lemail,
+                $goal_id,
+                $milestone["goal_milestone_type"],
+                $milestone["goal_milestone_text"],
+                0,  // completion state
+                date("Y-m-d"),  // Once setting date is implemented in the front end it should be passed in the request body
+                $milestone["goal_milestone_title"],
+                0,  // Not sure what magnitudes are, add them to the $milestones_list once real milestones are written
+                $milestone["goal_milestone_keyword"]
+            ];
+
+            $stmt = $dbc->prepare($query);
+            if(!$stmt->execute($params)){
+                sql_execute_fail();
+            }
+        }
+    }
+
+    function sql_execute_fail(){
+        $response = json_encode(['success' => false, 'message' => 'Something went wrong']); 
+        send_json_response($response, 400);
+        die();
+    }
+
+    function send_json_response($response, $status_code = 200){
+        http_response_code((int)$status_code);
+        header('Content-type: application/json');
+        echo $response;
+    }
+
+?> $(document).ready(function() {
+    $(".what-we-need .addToGoals").on("click", function() {
+        goalSave(this.id);
+    });
+});
+
+function goalSave(goalType){
+    $.ajax({
+        url: "goals_store_save",
+        type: "POST",
+        dataType: "json",
+        contentType: "application/json",
+        data: JSON.stringify({goalType: goalType}),
+        success:    (data) => { 
+            if(data.success) {
+                botAlert('#link_alert', 6000, data.message);
+            } else {
+                botAlert('#link_alert', 6000, data.message);
+            }
+        },
+        error:  (xhr, errorThrown) => {
+            if(xhr.status === 400){
+                try {
+                    let response = JSON.parse(xhr.responseText);
+                    botAlert('#link_alert', 6000, response.message);
+                } catch(e){
+                    botAlert('#link_alert', 6000, 'An error occurred. Please try again later.');
+                }
+            } else {
+                botAlert('#link_alert',6000, 'An error occurred. Please try again later.');
+            }
+            console.log(errorThrown);
+        },
+    })
+}
