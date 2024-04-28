@@ -1,0 +1,44 @@
+// Add edit challenge popup container to #screen_greyout object
+    $('#screen_greyout').append(
+        '<div class="custom_pop custom_pop_narrow" id="edit-challenge-popup">'+ 
+            '<button class="closebtn abs_btn" onclick="customPopClose(\'log_container\')" autocomplete="off" style="border-width:0px;background-color:rgba(255,255,255,0);"></button>'+
+            '<div id="popup_edit_challenge_container" style=""></div>'+
+        '</div>'
+    )
+
+}
+
+//AJAX challenges data from DB and return as JS array [Used in portfolio.php... why is this here]
+function fetchChallenges(){
+    return $.ajax({
+        url: 'challenges_fetch',
+        type: 'POST',
+        dataType:'json'
+    });
+}
+
+function editChallengePopup(pos) {
+    appendChallengePopups();
+    // Copy create challenge form to set foundation for edit challenge form
+    $('#popup_edit_challenge_container').html($('#challenge-popup').html());
+    // Restructure create challenge form for editing
+    $('#popup_edit_challenge_container #challenge-popup').attr('id', 'edit-challenge-form');
+    $('#popup_edit_challenge_container .challenge-title').text('Edit Challenge');
+    $('#popup_edit_challenge_container .challenge-create-btn').text('UPDATE');
+    // $('#popup_edit_challenge_container #name').attr('id', 'edit-name').attr('name', 'edit-name');
+    // $('#popup_edit_challenge_container #description').attr('id', 'edit-description').attr('name', 'edit-description');
+    // $('#popup_edit_challenge_container #start_date').attr('id', 'edit-start_date').attr('name', 'edit-start_date');
+    // $('#popup_edit_challenge_container #end_date').attr('id', 'edit-end_date').attr('name', 'edit-end_date');
+    // $('#popup_edit_challenge_container #amount').attr('id', 'edit-amount').attr('name', 'edit-amount');
+    // $('#popup_edit_challenge_container #challenge_type').attr('id', 'edit-challenge_type').attr('name', 'edit-challenge_type');
+    // $('#popup_edit_challenge_container #celebration').attr('id', 'edit-celebration').attr('name', 'edit-celebration');
+    // Populate edit form with current challenge info
+    $('#popup_edit_challenge_container #name').val(active_challenges[pos].challenge_name);
+    $('#popup_edit_challenge_container #description').val(active_challenges[pos].challenge_description);
+    $('#popup_edit_challenge_container #amount').val(active_challenges[pos].challenge_amt);
+    $('#popup_edit_challenge_container #challenge_type').val(active_challenges[pos].challenge_typ);
+    $('#popup_edit_challenge_container #celebration').val(active_challenges[pos].challenge_celebration);
+
+    customPopOpen("edit-challenge-popup");
+    console.log("clicked edit challenge");
+}
